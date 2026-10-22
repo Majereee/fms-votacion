@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FMS Scoreboard - Planilla Oficial de Juez</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090b10;
+      color: #e2e8f0;
+      user-select: none;
+    }
+    .font-brand { font-family: 'Chakra Petch', sans-serif; }
+    .font-mono-score { font-family: 'JetBrains Mono', monospace; }
+
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] { -moz-appearance: field; }
+
+    .score-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #f59e0b, 0 0 8px rgba(245, 158, 11, 0.45);
+      background-color: #181c27 !important;
+    }
+    .hidden-scores .score-reveal {
+      filter: blur(8px);
+      pointer-events: none;
+      transition: filter 0.15s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#090b10] text-zinc-200">
+
+  <!-- Header Compacto -->
+  <header class="border-b border-zinc-800 bg-[#0f131c] sticky top-0 z-40 px-3 py-1.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      
+      <!-- Marca, sorteo y botones de utilidad -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 mr-1">
+          <div class="w-6 h-6 rounded bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center font-brand font-black text-black text-xs shadow-sm">
+            F
+          </div>
+          <span class="font-brand font-bold text-sm tracking-wider text-white">FMS<span class="text-amber-400">JURY</span></span>
+        </div>
+
+        <!-- Sorteo Starter -->
+        <div class="flex items-center bg-zinc-900 border border-zinc-800 rounded px-1 py-0.5 text-[11px]">
+          <span class="text-zinc-500 mr-1 text-[10px] hidden sm:inline">Inicia:</span>
+          <button id="btnStarter1" onclick="setBattleStarter(1)" class="px-2 py-0.5 rounded font-bold text-[10px] transition bg-rose-600 text-white">
+            <span class="mc1ShortName">MC 1</span>
+          </button>
+          <button id="btnStarter2" onclick="setBattleStarter(2)" class="px-2 py-0.5 rounded font-bold text-[10px] transition text-zinc-400 hover:text-white">
+            <span class="mc2ShortName">MC 2</span>
+          </button>
+        </div>
+
+        <!-- Activar Réplica Toggle -->
+        <button id="toggleReplicaBtn" onclick="toggleReplicaRound()" class="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-[11px] font-semibold text-zinc-400 transition flex items-center gap-1">
+          <span id="replicaDot" class="w-2 h-2 rounded-full bg-zinc-600"></span>
+          <span>Réplica 4x4</span>
+        </button>
+
+        <!-- Modo Ciego -->
+        <button id="toggleBlindBtn" onclick="toggleBlindMode()" class="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-[11px] font-semibold text-zinc-300 transition" title="Ocultar sumas parciales">
+          <span id="blindBtnLabel">Ocultar Sumas</span>
+        </button>
+
+        <!-- Botón Instrucciones / Atajos -->
+        <button onclick="openHelpModal()" class="w-6 h-6 rounded border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold text-xs flex items-center justify-center transition" title="Ayuda y Atajos de teclado (?)">
+          ?
+        </button>
+
+        <!-- Exportar -->
+        <button onclick="openExportModal()" class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition shadow">
+          Exportar
+        </button>
+      </div>
+
+      <!-- MCs y Marcador Global -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 bg-rose-950/30 border border-rose-900/60 rounded-md px-2 py-0.5">
+          <input type="text" id="mc1Name" value="MC 1" tabindex="1" oninput="updateNames()" class="bg-transparent text-xs font-bold text-rose-400 focus:outline-none rounded w-20 uppercase tracking-wide" placeholder="MC 1">
+          <span id="globalScoreMC1" class="font-mono-score font-black text-rose-400 text-sm score-reveal border-l border-rose-900/50 pl-1.5">0.0</span>
+        </div>
+
+        <span class="font-brand font-black text-zinc-600 text-xs">VS</span>
+
+        <div class="flex items-center gap-1.5 bg-cyan-950/30 border border-cyan-900/60 rounded-md px-2 py-0.5">
+          <span id="globalScoreMC2" class="font-mono-score font-black text-cyan-400 text-sm score-reveal border-r border-cyan-900/50 pr-1.5">0.0</span>
+          <input type="text" id="mc2Name" value="MC 2" tabindex="2" oninput="updateNames()" class="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none rounded w-20 uppercase tracking-wide text-right" placeholder="MC 2">
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Pestañas de Ronda Compactas -->
+  <div class="bg-[#10141f] border-b border-zinc-800/90 sticky top-[41px] z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-3 flex items-center justify-between overflow-x-auto no-scrollbar gap-2 py-1">
+      <nav class="flex space-x-1.5" id="navTabs">
+        <button onclick="switchTab('r1')" id="tab-r1" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded transition bg-amber-500 text-black font-brand tracking-wider">
+          1. RANDOM MODE
+        </button>
+        <button onclick="switchTab('r2')" id="tab-r2" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded transition bg-zinc-900 text-zinc-400 hover:text-white font-brand tracking-wider">
+          2. MINUTOS (60s)
+        </button>
+        <button onclick="switchTab('r3')" id="tab-r3" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded transition bg-zinc-900 text-zinc-400 hover:text-white font-brand tracking-wider">
+          3. DELUXE
+        </button>
+        <button onclick="switchTab('replica')" id="tab-replica" class="tab-btn hidden px-2.5 py-1 text-[11px] font-bold rounded transition bg-zinc-900 text-amber-400 border border-amber-500/40 hover:bg-zinc-800 font-brand tracking-wider">
+          ⚡ RÉPLICA 4X4
+        </button>
+        <button onclick="switchTab('verdict')" id="tab-verdict" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded transition bg-zinc-900 text-zinc-400 hover:text-white font-brand tracking-wider">
+          VEREDICTO
+        </button>
+      </nav>
+
+      <!-- Mini resumen en barra -->
+      <div class="flex items-center gap-2 score-reveal text-[11px] font-mono-score">
+        <span class="text-zinc-500">DIF:</span>
+        <span id="quickDiff" class="text-zinc-200 font-bold">0.0</span>
+        <span id="quickVerdict" class="px-1.5 py-0.2 rounded text-[9px] font-brand uppercase bg-zinc-800 text-zinc-400">RÉPLICA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal Comprimido -->
+  <main class="max-w-7xl mx-auto p-2.5 md:p-3 w-full flex-1">
+
+    <!-- RONDA 1: RANDOM MODE -->
+    <section id="pane-r1" class="tab-pane">
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 shadow-md">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-brand font-bold text-white tracking-wide">1. RANDOM MODE</span>
+            <span id="r1-turn-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-amber-400 border border-zinc-700">Inicia MC 1</span>
+          </div>
+          <div class="flex gap-3 text-xs font-mono-score">
+            <span class="score-reveal text-rose-400 font-bold"><span class="mc1LabelDisplay">MC 1</span>: <span id="r1-total-mc1">0.0</span></span>
+            <span class="score-reveal text-cyan-400 font-bold"><span class="mc2LabelDisplay">MC 2</span>: <span id="r1-total-mc2">0.0</span></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" id="r1-grid-container"></div>
+      </div>
+    </section>
+
+    <!-- RONDA 2: MINUTOS LIBRES (60s) -->
+    <section id="pane-r2" class="tab-pane hidden">
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 shadow-md">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-brand font-bold text-white tracking-wide">2. MINUTOS LIBRES (60s)</span>
+            <span id="r2-turn-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-amber-400 border border-zinc-700">Inicia quien cerró R1</span>
+          </div>
+          <div class="flex gap-3 text-xs font-mono-score">
+            <span class="score-reveal text-rose-400 font-bold"><span class="mc1LabelDisplay">MC 1</span>: <span id="r2-total-mc1">0.0</span></span>
+            <span class="score-reveal text-cyan-400 font-bold"><span class="mc2LabelDisplay">MC 2</span>: <span id="r2-total-mc2">0.0</span></span>
+          </div>
+        </div>
+        <div class="space-y-3" id="r2-turns-container"></div>
+      </div>
+    </section>
+
+    <!-- RONDA 3: DELUXE (4X4) -->
+    <section id="pane-r3" class="tab-pane hidden">
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 shadow-md">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-brand font-bold text-white tracking-wide">3. DELUXE (4X4)</span>
+            <span id="r3-turn-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-amber-400 border border-zinc-700">Inicia quien cerró R2</span>
+          </div>
+          <div class="flex gap-3 text-xs font-mono-score">
+            <span class="score-reveal text-rose-400 font-bold"><span class="mc1LabelDisplay">MC 1</span>: <span id="r3-total-mc1">0.0</span></span>
+            <span class="score-reveal text-cyan-400 font-bold"><span class="mc2LabelDisplay">MC 2</span>: <span id="r3-total-mc2">0.0</span></span>
+          </div>
+        </div>
+
+        <!-- A Capela -->
+        <div class="mb-3 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/80">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider font-brand">Fase 1: A Capela (3 Entradas)</span>
+            <span id="r3-acapela-order-label" class="text-[10px] text-zinc-500 font-mono">Alternado</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="r3-acapela-container"></div>
+        </div>
+
+        <!-- Con Base -->
+        <div class="mb-3 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/80">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider font-brand">Fase 2: Con Base (6 Entradas)</span>
+            <span id="r3-beat-order-label" class="text-[10px] text-zinc-500 font-mono">Alternado</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" id="r3-beat-container"></div>
+        </div>
+
+        <!-- Extras Deluxe -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-zinc-800/80 pt-2.5" id="r3-extras-container"></div>
+      </div>
+    </section>
+
+    <!-- PESTAÑA OPTATIVA: RÉPLICA (DESEMPATE 4X4) -->
+    <section id="pane-replica" class="tab-pane hidden">
+      <div class="bg-zinc-900/50 border border-amber-500/30 rounded-xl p-3 shadow-lg">
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-brand font-black text-amber-400 tracking-wider">⚡ DESEMPATE: RÉPLICA 4X4</span>
+            <span id="rep-turn-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800/60">6 entradas 4x4 alternadas</span>
+          </div>
+          <div class="flex gap-3 text-xs font-mono-score">
+            <span class="text-rose-400 font-bold"><span class="mc1LabelDisplay">MC 1</span>: <span id="rep-total-mc1">0.0</span></span>
+            <span class="text-cyan-400 font-bold"><span class="mc2LabelDisplay">MC 2</span>: <span id="rep-total-mc2">0.0</span></span>
+          </div>
+        </div>
+
+        <!-- Entradas Réplica -->
+        <div class="mb-3 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/80">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" id="rep-patterns-container"></div>
+        </div>
+
+        <!-- Extras Réplica -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-zinc-800/80 pt-2.5" id="rep-extras-container"></div>
+      </div>
+    </section>
+
+    <!-- VEREDICTO FINAL COMPACTO -->
+    <section id="pane-verdict" class="tab-pane hidden">
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 md:p-6 shadow-xl max-w-4xl mx-auto">
+        
+        <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 mb-4 text-center">
+          <span class="text-[10px] uppercase text-zinc-400 font-bold tracking-wider mb-1 block">Resultado Final</span>
+          <div id="verdictHeadline" class="text-2xl md:text-3xl font-brand font-black text-amber-400 tracking-wider mb-1">
+            RÉPLICA
+          </div>
+          <p id="verdictDetails" class="text-xs text-zinc-400 font-mono-score">
+            Diferencia menor o igual a 5.0 puntos (0.0 pts).
+          </p>
+        </div>
+
+        <!-- Tabla Comprimida -->
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-zinc-800 text-zinc-400 uppercase font-brand text-[10px]">
+                <th class="py-2 px-3">Ronda</th>
+                <th class="py-2 px-3 text-center text-rose-400 mc1LabelDisplay font-bold">MC 1</th>
+                <th class="py-2 px-3 text-center text-cyan-400 mc2LabelDisplay font-bold">MC 2</th>
+                <th class="py-2 px-3 text-center">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60 font-mono-score">
+              <tr>
+                <td class="py-1.5 px-3 font-sans text-zinc-300">1. Random Mode</td>
+                <td class="py-1.5 px-3 text-center font-bold text-rose-300" id="table-r1-mc1">0.0</td>
+                <td class="py-1.5 px-3 text-center font-bold text-cyan-300" id="table-r1-mc2">0.0</td>
+                <td class="py-1.5 px-3 text-center text-zinc-400" id="table-r1-diff">0.0</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 px-3 font-sans text-zinc-300">2. Minutos Libres (60s)</td>
+                <td class="py-1.5 px-3 text-center font-bold text-rose-300" id="table-r2-mc1">0.0</td>
+                <td class="py-1.5 px-3 text-center font-bold text-cyan-300" id="table-r2-mc2">0.0</td>
+                <td class="py-1.5 px-3 text-center text-zinc-400" id="table-r2-diff">0.0</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 px-3 font-sans text-zinc-300">3. Deluxe</td>
+                <td class="py-1.5 px-3 text-center font-bold text-rose-300" id="table-r3-mc1">0.0</td>
+                <td class="py-1.5 px-3 text-center font-bold text-cyan-300" id="table-r3-mc2">0.0</td>
+                <td class="py-1.5 px-3 text-center text-zinc-400" id="table-r3-diff">0.0</td>
+              </tr>
+              <tr class="bg-zinc-950/80 font-bold border-t border-zinc-700">
+                <td class="py-2 px-3 font-brand uppercase text-amber-400">Total Batalla Regular</td>
+                <td class="py-2 px-3 text-center text-rose-400" id="table-total-mc1">0.0</td>
+                <td class="py-2 px-3 text-center text-cyan-400" id="table-total-mc2">0.0</td>
+                <td class="py-2 px-3 text-center text-amber-400" id="table-total-diff">0.0</td>
+              </tr>
+              <tr id="table-row-replica" class="hidden bg-amber-950/20 text-amber-300 border-t border-amber-900/40">
+                <td class="py-2 px-3 font-brand uppercase font-bold">⚡ Desempate (Réplica)</td>
+                <td class="py-2 px-3 text-center font-bold text-rose-300" id="table-rep-mc1">0.0</td>
+                <td class="py-2 px-3 text-center font-bold text-cyan-300" id="table-rep-mc2">0.0</td>
+                <td class="py-2 px-3 text-center text-zinc-300" id="table-rep-diff">0.0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button onclick="openExportModal()" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-brand font-bold text-xs tracking-wider transition">
+            Exportar / Copiar Resultado
+          </button>
+          <button onclick="confirmReset()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition border border-zinc-700">
+            Reiniciar Todo
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: INSTRUCCIONES Y ATAJOS -->
+  <div id="helpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full p-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 border-b border-zinc-800 pb-2">
+        <h3 class="font-brand font-bold text-white text-sm flex items-center gap-1.5">
+          <span class="text-amber-400 font-black">?</span> Atajos de Teclado y Reglamento
+        </h3>
+        <button onclick="closeHelpModal()" class="text-zinc-500 hover:text-white text-base font-bold">&times;</button>
+      </div>
+      
+      <div class="space-y-3 text-xs text-zinc-300">
+        <div>
+          <span class="font-bold text-amber-400 block mb-1">⚡ Atajos de Puntuación:</span>
+          <ul class="space-y-1 list-disc list-inside text-zinc-400">
+            <li><kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 font-mono text-[10px]">Tab</kbd>: Pasa al siguiente patrón en orden de turno.</li>
+            <li><kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-amber-300 border border-zinc-700 font-mono text-[10px]">↓ Flecha Abajo</kbd>: Marca respuesta/réplica (+1 punto).</li>
+            <li><kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono text-[10px]">↑ Flecha Arriba</kbd>: Desmarca réplica (0 puntos).</li>
+            <li>Rango de patrones: de <strong class="text-zinc-200">0 a 4</strong> (con medios puntos: 0.5, 1, 1.5, etc.).</li>
+            <li>Rango extras (Flow, Skills, Escena): de <strong class="text-zinc-200">0 a 2</strong>.</li>
+          </ul>
+        </div>
+
+        <div>
+          <span class="font-bold text-amber-400 block mb-1">🔄 Reglas de Rotación Oficial FMS:</span>
+          <p class="text-zinc-400 text-[11px] leading-relaxed">
+            - <strong>Ronda 1:</strong> Inicia quien ganó el sorteo.<br>
+            - <strong>Ronda 2:</strong> Inicia quien acabó la Ronda 1.<br>
+            - <strong>Ronda 3:</strong> Inicia quien acabó la Ronda 2.<br>
+            - <strong>Criterio Réplica:</strong> Si la diferencia global es ≤ 5.0 puntos se determina réplica.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-2 border-t border-zinc-800 text-right">
+        <button onclick="closeHelpModal()" class="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EXPORTAR -->
+  <div id="exportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 border-b border-zinc-800 pb-2">
+        <h3 class="font-brand font-bold text-white text-sm">Resumen de Puntuación</h3>
+        <button onclick="closeExportModal()" class="text-zinc-500 hover:text-white text-base font-bold">&times;</button>
+      </div>
+      <textarea id="exportText" rows="11" readonly class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 font-mono-score text-xs text-zinc-300 focus:outline-none mb-3 select-all"></textarea>
+      
+      <div class="flex items-center justify-between gap-2">
+        <span id="copyFeedback" class="text-[11px] text-emerald-400 font-semibold opacity-0 transition">¡Copiado al portapapeles!</span>
+        <div class="flex gap-2">
+          <button onclick="copyExportText()" class="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition">
+            Copiar Texto
+          </button>
+          <button onclick="closeExportModal()" class="px-3 py-1.5 rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs font-semibold">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lógica JavaScript -->
+  <script>
+    const state = {
+      battleStarter: 1,
+      blindMode: false,
+      replicaEnabled: false,
+      currentTabindex: 10,
+      savedScores: {},
+      savedReplies: {}
+    };
+
+    function nextTabindex() {
+      return state.currentTabindex++;
+    }
+
+    function saveCurrentInputs() {
+      document.querySelectorAll('input.score-input').forEach(input => {
+        state.savedScores[input.id] = input.value;
+      });
+      document.querySelectorAll('input[type=hidden]').forEach(h => {
+        state.savedReplies[h.id] = h.value;
+      });
+    }
+
+    function setBattleStarter(starter) {
+      if (state.battleStarter === starter) return;
+      saveCurrentInputs();
+      state.battleStarter = starter;
+
+      const btn1 = document.getElementById('btnStarter1');
+      const btn2 = document.getElementById('btnStarter2');
+      if (starter === 1) {
+        btn1.className = 'px-2 py-0.5 rounded font-bold text-[10px] transition bg-rose-600 text-white';
+        btn2.className = 'px-2 py-0.5 rounded font-bold text-[10px] transition text-zinc-400 hover:text-white';
+      } else {
+        btn2.className = 'px-2 py-0.5 rounded font-bold text-[10px] transition bg-cyan-600 text-white';
+        btn1.className = 'px-2 py-0.5 rounded font-bold text-[10px] transition text-zinc-400 hover:text-white';
+      }
+      renderScoreboard();
+    }
+
+    function toggleReplicaRound(forceState = null) {
+      saveCurrentInputs();
+      state.replicaEnabled = forceState !== null ? forceState : !state.replicaEnabled;
+
+      const tabRep = document.getElementById('tab-replica');
+      const dot = document.getElementById('replicaDot');
+      const btn = document.getElementById('toggleReplicaBtn');
+      const repRow = document.getElementById('table-row-replica');
+
+      if (state.replicaEnabled) {
+        tabRep.classList.remove('hidden');
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        btn.classList.add('border-emerald-500/50', 'text-emerald-300');
+        repRow.classList.remove('hidden');
+      } else {
+        tabRep.classList.add('hidden');
+        dot.className = 'w-2 h-2 rounded-full bg-zinc-600';
+        btn.classList.remove('border-emerald-500/50', 'text-emerald-300');
+        repRow.classList.add('hidden');
+      }
+
+      renderScoreboard();
+    }
+
+    function getMcName(mcNumber) {
+      if (mcNumber === 1) return (document.getElementById('mc1Name')?.value || 'MC 1').toUpperCase();
+      return (document.getElementById('mc2Name')?.value || 'MC 2').toUpperCase();
+    }
+
+    // Input de celda ultra-compacta
+    function renderPatternSlot(prefix, index, mcNumber, withReply = false) {
+      const inputId = `${prefix}-${index}`;
+      const replyId = `${prefix}-${index}-reply`;
+      const isMc1 = mcNumber === 1;
+      const textCls = isMc1 ? 'text-rose-300' : 'text-cyan-300';
+      const tabindex = nextTabindex();
+      
+      const prevVal = state.savedScores[inputId] !== undefined ? state.savedScores[inputId] : '0';
+      const prevReply = state.savedReplies[replyId] === '1';
+
+      return `
+        <div class="bg-zinc-950/70 border border-zinc-800 rounded p-1 flex flex-col justify-between group focus-within:border-amber-500 transition">
+          <div class="flex items-center justify-between text-[9px] text-zinc-500 leading-none mb-1">
+            <span class="font-mono">P${index}</span>
+            ${withReply ? `
+              <button type="button" tabindex="-1" onclick="toggleReply('${replyId}')" id="btn-${replyId}" 
+                class="reply-tag px-1 py-0.2 rounded text-[8px] font-bold ${prevReply ? 'bg-emerald-500 text-black font-black' : 'bg-zinc-800 text-zinc-500'} hover:opacity-90 transition">
+                +1R
+              </button>
+            ` : ''}
+          </div>
+          <div>
+            <input type="number" 
+              id="${inputId}" 
+              tabindex="${tabindex}"
+              data-reply-target="${withReply ? replyId : ''}"
+              step="0.5" min="0" max="4" 
+              value="${prevVal}"
+              class="score-input w-full bg-zinc-900 border border-zinc-800 rounded py-0.5 text-center font-mono-score font-bold text-xs ${textCls} transition"
+              onfocus="this.select()"
+              oninput="onScoreInputChange(this)"
+              onkeydown="handleScoreKeydown(event, this)">
+          </div>
+          ${withReply ? `<input type="hidden" id="${replyId}" value="${prevReply ? '1' : '0'}">` : ''}
+        </div>
+      `;
+    }
+
+    // Casillas extras compactas (Flow, Skills, Escena)
+    function renderExtraSlots(prefix, mcNumber) {
+      const cats = [{ l: 'Flow', k: 'flow' }, { l: 'Skill', k: 'skills' }, { l: 'Esc.', k: 'escena' }];
+      const textCls = mcNumber === 1 ? 'text-rose-300' : 'text-cyan-300';
+      
+      let html = '<div class="grid grid-cols-3 gap-1.5">';
+      cats.forEach(c => {
+        const inputId = `${prefix}-${c.k}`;
+        const tabindex = nextTabindex();
+        const prevVal = state.savedScores[inputId] !== undefined ? state.savedScores[inputId] : '0';
+
+        html += `
+          <div class="bg-zinc-950/60 border border-zinc-800/80 rounded p-1 text-center">
+            <span class="block text-[8px] text-zinc-400 uppercase font-semibold mb-0.5 leading-none">${c.l}</span>
+            <input type="number" 
+              id="${inputId}" 
+              tabindex="${tabindex}"
+              step="0.5" min="0" max="2" 
+              value="${prevVal}"
+              class="score-input w-full bg-zinc-900 border border-zinc-800 rounded py-0.5 text-center font-mono-score font-bold text-[11px] ${textCls}"
+              onfocus="this.select()"
+              oninput="onScoreInputChange(this)">
+          </div>
+        `;
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function renderScoreboard() {
+      state.currentTabindex = 10;
+
+      const r1Starter = state.battleStarter;
+      const r1Finisher = r1Starter === 1 ? 2 : 1;
+      const r2Starter = r1Finisher;
+      const r2Finisher = r2Starter === 1 ? 2 : 1;
+      const r2LastRhymer = r2Starter;
+      const r3Starter = r2LastRhymer;
+      const r3Responder = r3Starter === 1 ? 2 : 1;
+
+      // Badge texts
+      setText('r1-turn-badge', `Inicia ${getMcName(r1Starter)}`);
+      setText('r2-turn-badge', `Inicia ${getMcName(r2Starter)} (Cerró R1)`);
+      setText('r3-turn-badge', `Inicia ${getMcName(r3Starter)} (Cerró R2)`);
+
+      // ==========================================
+      // R1: RANDOM MODE
+      // ==========================================
+      const r1Container = document.getElementById('r1-grid-container');
+      const renderR1Column = (mc) => {
+        const isMc1 = mc === 1;
+        const borderCls = isMc1 ? 'border-rose-950/40' : 'border-cyan-950/40';
+        const textCls = isMc1 ? 'text-rose-400' : 'text-cyan-400';
+
+        let pSlots = '<div class="grid grid-cols-4 sm:grid-cols-8 gap-1.5 mb-2">';
+        for (let i = 1; i <= 8; i++) {
+          pSlots += renderPatternSlot(`r1-mc${mc}`, i, mc, false);
+        }
+        pSlots += '</div>';
+
+        return `
+          <div class="bg-zinc-950/30 border ${borderCls} rounded-lg p-2.5">
+            <div class="flex items-center justify-between mb-1.5 ${textCls} font-bold text-xs">
+              <span class="mc${mc}LabelDisplay">${getMcName(mc)}</span>
+              <span class="score-reveal font-mono-score text-[11px]" id="r1-subtotal-mc${mc}">0.0</span>
+            </div>
+            ${pSlots}
+            <div class="border-t border-zinc-800/80 pt-1.5">
+              ${renderExtraSlots(`r1-mc${mc}`, mc)}
+            </div>
+          </div>
+        `;
+      };
+      r1Container.innerHTML = renderR1Column(r1Starter) + renderR1Column(r1Finisher);
+
+      // ==========================================
+      // R2: MINUTOS LIBRES
+      // ==========================================
+      const r2TurnsContainer = document.getElementById('r2-turns-container');
+      const mcColor = (mc) => mc === 1 ? 'text-rose-400' : 'text-cyan-400';
+
+      const renderPatternRow = (prefix, mc, withReply) => {
+        let html = '<div class="grid grid-cols-6 gap-1.5">';
+        for (let i = 1; i <= 6; i++) {
+          html += renderPatternSlot(prefix, i, mc, withReply);
+        }
+        html += '</div>';
+        return html;
+      };
+
+      r2TurnsContainer.innerHTML = `
+        <div class="bg-zinc-950/30 border border-zinc-800 rounded-lg p-2.5">
+          <span class="text-[11px] font-bold text-amber-300 font-brand block mb-1.5">TURNO 1: Minuto de Ida</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div>
+              <span class="text-[10px] font-bold ${mcColor(r2Starter)} block mb-1">${getMcName(r2Starter)} (Ataque)</span>
+              ${renderPatternRow('r2-t1-atk', r2Starter, false)}
+            </div>
+            <div>
+              <span class="text-[10px] font-bold ${mcColor(r2Finisher)} block mb-1">${getMcName(r2Finisher)} (Respuesta con réplica)</span>
+              ${renderPatternRow('r2-t1-resp', r2Finisher, true)}
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-zinc-950/30 border border-zinc-800 rounded-lg p-2.5">
+          <span class="text-[11px] font-bold text-amber-300 font-brand block mb-1.5">TURNO 2: Minuto de Vuelta</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div>
+              <span class="text-[10px] font-bold ${mcColor(r2Finisher)} block mb-1">${getMcName(r2Finisher)} (Ataque)</span>
+              ${renderPatternRow('r2-t2-atk', r2Finisher, false)}
+            </div>
+            <div>
+              <span class="text-[10px] font-bold ${mcColor(r2Starter)} block mb-1">${getMcName(r2Starter)} (Respuesta con réplica)</span>
+              ${renderPatternRow('r2-t2-resp', r2Starter, true)}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 border-t border-zinc-800/80 pt-2">
+          <div class="bg-zinc-950/30 p-2 rounded border border-rose-950/30">
+            <span class="text-[10px] font-bold text-rose-400 mb-1 block uppercase">${getMcName(1)} - Extras</span>
+            ${renderExtraSlots('r2-extra-mc1', 1)}
+          </div>
+          <div class="bg-zinc-950/30 p-2 rounded border border-cyan-950/30">
+            <span class="text-[10px] font-bold text-cyan-400 mb-1 block uppercase">${getMcName(2)} - Extras</span>
+            ${renderExtraSlots('r2-extra-mc2', 2)}
+          </div>
+        </div>
+      `;
+
+      // ==========================================
+      // R3: DELUXE (4X4 COMPACTO)
+      // ==========================================
+      document.getElementById('r3-acapela-order-label').innerText = `Tab: ${getMcName(r3Starter)} ➔ ${getMcName(r3Responder)}`;
+      document.getElementById('r3-beat-order-label').innerText = `Tab: ${getMcName(r3Starter)} ➔ ${getMcName(r3Responder)}`;
+
+      const renderDeluxePair = (prefix, i, stMc, resMc) => {
+        const startInputId = `${prefix}-start-${i}`;
+        const startRepId = `${prefix}-start-${i}-reply`;
+        const startTab = nextTabindex();
+
+        const respInputId = `${prefix}-resp-${i}`;
+        const respRepId = `${prefix}-resp-${i}-reply`;
+        const respTab = nextTabindex();
+
+        const stColor = stMc === 1 ? 'text-rose-300' : 'text-cyan-300';
+        const resColor = resMc === 1 ? 'text-rose-300' : 'text-cyan-300';
+
+        const prevValSt = state.savedScores[startInputId] !== undefined ? state.savedScores[startInputId] : '0';
+        const prevRepSt = state.savedReplies[startRepId] === '1';
+
+        const prevValRes = state.savedScores[respInputId] !== undefined ? state.savedScores[respInputId] : '0';
+        const prevRepRes = state.savedReplies[respRepId] === '1';
+
+        return `
+          <div class="bg-zinc-900/60 border border-zinc-800/90 rounded p-1.5 flex flex-col gap-1">
+            <div class="flex items-center justify-between text-[9px] text-zinc-500 font-mono">
+              <span>Compás ${i}</span>
+              <span class="text-zinc-400 font-semibold">${getMcName(stMc).substring(0,4)} ➔ ${getMcName(resMc).substring(0,4)}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- Starter Compás -->
+              <div class="flex items-center gap-1 bg-zinc-950/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                <input type="number" id="${startInputId}" tabindex="${startTab}" data-reply-target="${startRepId}"
+                  step="0.5" min="0" max="4" value="${prevValSt}"
+                  class="score-input w-full bg-transparent text-center font-mono-score font-bold text-xs ${stColor}"
+                  onfocus="this.select()" oninput="onScoreInputChange(this)" onkeydown="handleScoreKeydown(event, this)">
+                <button type="button" tabindex="-1" onclick="toggleReply('${startRepId}')" id="btn-${startRepId}" 
+                  class="reply-tag px-1 py-0.2 rounded text-[8px] font-bold ${prevRepSt ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-500'}">
+                  +1R
+                </button>
+                <input type="hidden" id="${startRepId}" value="${prevRepSt ? '1' : '0'}">
+              </div>
+
+              <!-- Responder Compás -->
+              <div class="flex items-center gap-1 bg-zinc-950/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                <input type="number" id="${respInputId}" tabindex="${respTab}" data-reply-target="${respRepId}"
+                  step="0.5" min="0" max="4" value="${prevValRes}"
+                  class="score-input w-full bg-transparent text-center font-mono-score font-bold text-xs ${resColor}"
+                  onfocus="this.select()" oninput="onScoreInputChange(this)" onkeydown="handleScoreKeydown(event, this)">
+                <button type="button" tabindex="-1" onclick="toggleReply('${respRepId}')" id="btn-${respRepId}" 
+                  class="reply-tag px-1 py-0.2 rounded text-[8px] font-bold ${prevRepRes ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-500'}">
+                  +1R
+                </button>
+                <input type="hidden" id="${respRepId}" value="${prevRepRes ? '1' : '0'}">
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      let acapHtml = '';
+      for (let i = 1; i <= 3; i++) acapHtml += renderDeluxePair('r3-acap', i, r3Starter, r3Responder);
+      document.getElementById('r3-acapela-container').innerHTML = acapHtml;
+
+      let beatHtml = '';
+      for (let i = 1; i <= 6; i++) beatHtml += renderDeluxePair('r3-beat', i, r3Starter, r3Responder);
+      document.getElementById('r3-beat-container').innerHTML = beatHtml;
+
+      document.getElementById('r3-extras-container').innerHTML = `
+        <div class="bg-zinc-950/30 p-2 rounded border border-rose-950/30">
+          <span class="text-[10px] font-bold text-rose-400 mb-1 block uppercase">${getMcName(1)} - Extras</span>
+          ${renderExtraSlots('r3-extra-mc1', 1)}
+        </div>
+        <div class="bg-zinc-950/30 p-2 rounded border border-cyan-950/30">
+          <span class="text-[10px] font-bold text-cyan-400 mb-1 block uppercase">${getMcName(2)} - Extras</span>
+          ${renderExtraSlots('r3-extra-mc2', 2)}
+        </div>
+      `;
+
+      // ==========================================
+      // RÉPLICA OPTATIVA (4X4 DE DESEMPATE)
+      // Empieza quien cerró la batalla Deluxe
+      // ==========================================
+      if (state.replicaEnabled) {
+        const repStarter = r3Responder; // El último en rimar del Deluxe
+        const repResponder = repStarter === 1 ? 2 : 1;
+        setText('rep-turn-badge', `Inicia ${getMcName(repStarter)} ➔ Responde ${getMcName(repResponder)}`);
+
+        let repPatternsHtml = '';
+        for (let i = 1; i <= 6; i++) {
+          repPatternsHtml += renderDeluxePair('rep-pat', i, repStarter, repResponder);
+        }
+        document.getElementById('rep-patterns-container').innerHTML = repPatternsHtml;
+
+        document.getElementById('rep-extras-container').innerHTML = `
+          <div class="bg-zinc-950/30 p-2 rounded border border-rose-950/30">
+            <span class="text-[10px] font-bold text-rose-400 mb-1 block uppercase">${getMcName(1)} - Extras Réplica</span>
+            ${renderExtraSlots('rep-extra-mc1', 1)}
+          </div>
+          <div class="bg-zinc-950/30 p-2 rounded border border-cyan-950/30">
+            <span class="text-[10px] font-bold text-cyan-400 mb-1 block uppercase">${getMcName(2)} - Extras Réplica</span>
+            ${renderExtraSlots('rep-extra-mc2', 2)}
+          </div>
+        `;
+      }
+
+      recalculateTotals();
+    }
+
+    // Teclas Flecha Arriba / Flecha Abajo para marcar réplicas
+    function handleScoreKeydown(event, input) {
+      const replyTarget = input.getAttribute('data-reply-target');
+      if (!replyTarget) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setReplyState(replyTarget, true);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setReplyState(replyTarget, false);
+      }
+    }
+
+    function toggleReply(replyId) {
+      const hiddenInput = document.getElementById(replyId);
+      if (!hiddenInput) return;
+      setReplyState(replyId, hiddenInput.value !== '1');
+    }
+
+    function setReplyState(replyId, isActive) {
+      const hiddenInput = document.getElementById(replyId);
+      const btn = document.getElementById(`btn-${replyId}`);
+      if (!hiddenInput || !btn) return;
+
+      if (isActive) {
+        hiddenInput.value = '1';
+        btn.classList.remove('bg-zinc-800', 'text-zinc-500');
+        btn.classList.add('bg-emerald-500', 'text-black', 'font-black');
+      } else {
+        hiddenInput.value = '0';
+        btn.classList.remove('bg-emerald-500', 'text-black', 'font-black');
+        btn.classList.add('bg-zinc-800', 'text-zinc-500');
+      }
+      state.savedReplies[replyId] = hiddenInput.value;
+      recalculateTotals();
+    }
+
+    function onScoreInputChange(input) {
+      let val = parseFloat(input.value);
+      const max = parseFloat(input.getAttribute('max') || '4');
+      const min = parseFloat(input.getAttribute('min') || '0');
+
+      if (isNaN(val)) val = 0;
+      if (val > max) input.value = max;
+      if (val < min) input.value = min;
+
+      state.savedScores[input.id] = input.value;
+      recalculateTotals();
+    }
+
+    function sumInputIds(prefix, count, withReply = false) {
+      let total = 0;
+      for (let i = 1; i <= count; i++) {
+        const inp = document.getElementById(`${prefix}-${i}`);
+        if (inp) total += parseFloat(inp.value) || 0;
+        if (withReply) {
+          const rep = document.getElementById(`${prefix}-${i}-reply`);
+          if (rep && rep.value === '1') total += 1;
+        }
+      }
+      return total;
+    }
+
+    function sumExtrasByPrefix(prefix) {
+      let total = 0;
+      ['flow', 'skills', 'escena'].forEach(key => {
+        const inp = document.getElementById(`${prefix}-${key}`);
+        if (inp) total += parseFloat(inp.value) || 0;
+      });
+      return total;
+    }
+
+    function recalculateTotals() {
+      const r1Starter = state.battleStarter;
+      const r2Starter = r1Starter === 1 ? 2 : 1;
+      const r2Finisher = r2Starter === 1 ? 2 : 1;
+      const r3Starter = r2Starter;
+      const r3Responder = r3Starter === 1 ? 2 : 1;
+
+      // 1. R1
+      const r1_mc1 = sumInputIds('r1-mc1', 8, false) + sumExtrasByPrefix('r1-mc1');
+      const r1_mc2 = sumInputIds('r1-mc2', 8, false) + sumExtrasByPrefix('r1-mc2');
+      setText('r1-total-mc1', r1_mc1.toFixed(1));
+      setText('r1-total-mc2', r1_mc2.toFixed(1));
+      setText('r1-subtotal-mc1', `${r1_mc1.toFixed(1)}`);
+      setText('r1-subtotal-mc2', `${r1_mc2.toFixed(1)}`);
+
+      // 2. R2
+      const t1_atk = sumInputIds('r2-t1-atk', 6, false);
+      const t1_resp = sumInputIds('r2-t1-resp', 6, true);
+      const t2_atk = sumInputIds('r2-t2-atk', 6, false);
+      const t2_resp = sumInputIds('r2-t2-resp', 6, true);
+
+      const r2_scores = { 1: 0, 2: 0 };
+      r2_scores[r2Starter] += t1_atk + t2_resp;
+      r2_scores[r2Finisher] += t1_resp + t2_atk;
+
+      const r2_mc1 = r2_scores[1] + sumExtrasByPrefix('r2-extra-mc1');
+      const r2_mc2 = r2_scores[2] + sumExtrasByPrefix('r2-extra-mc2');
+      setText('r2-total-mc1', r2_mc1.toFixed(1));
+      setText('r2-total-mc2', r2_mc2.toFixed(1));
+
+      // 3. R3
+      const startAcap = sumInputIds('r3-acap-start', 3, true);
+      const respAcap = sumInputIds('r3-acap-resp', 3, true);
+      const startBeat = sumInputIds('r3-beat-start', 6, true);
+      const respBeat = sumInputIds('r3-beat-resp', 6, true);
+
+      const r3_scores = { 1: 0, 2: 0 };
+      r3_scores[r3Starter] += startAcap + startBeat;
+      r3_scores[r3Responder] += respAcap + respBeat;
+
+      const r3_mc1 = r3_scores[1] + sumExtrasByPrefix('r3-extra-mc1');
+      const r3_mc2 = r3_scores[2] + sumExtrasByPrefix('r3-extra-mc2');
+      setText('r3-total-mc1', r3_mc1.toFixed(1));
+      setText('r3-total-mc2', r3_mc2.toFixed(1));
+
+      // Gran Total Regular
+      const grandMC1 = r1_mc1 + r2_mc1 + r3_mc1;
+      const grandMC2 = r1_mc2 + r2_mc2 + r3_mc2;
+      const diff = Math.abs(grandMC1 - grandMC2);
+
+      setText('globalScoreMC1', grandMC1.toFixed(1));
+      setText('globalScoreMC2', grandMC2.toFixed(1));
+      setText('quickDiff', diff.toFixed(1));
+
+      // Tabla Veredicto
+      setText('table-r1-mc1', r1_mc1.toFixed(1));
+      setText('table-r1-mc2', r1_mc2.toFixed(1));
+      setText('table-r1-diff', Math.abs(r1_mc1 - r1_mc2).toFixed(1));
+
+      setText('table-r2-mc1', r2_mc1.toFixed(1));
+      setText('table-r2-mc2', r2_mc2.toFixed(1));
+      setText('table-r2-diff', Math.abs(r2_mc1 - r2_mc2).toFixed(1));
+
+      setText('table-r3-mc1', r3_mc1.toFixed(1));
+      setText('table-r3-mc2', r3_mc2.toFixed(1));
+      setText('table-r3-diff', Math.abs(r3_mc1 - r3_mc2).toFixed(1));
+
+      setText('table-total-mc1', grandMC1.toFixed(1));
+      setText('table-total-mc2', grandMC2.toFixed(1));
+      setText('table-total-diff', diff.toFixed(1));
+
+      // 4. Réplica (si está habilitada)
+      let rep_mc1 = 0;
+      let rep_mc2 = 0;
+      if (state.replicaEnabled) {
+        const repStarter = r3Responder;
+        const repResponder = repStarter === 1 ? 2 : 1;
+        const startRep = sumInputIds('rep-pat-start', 6, true);
+        const respRep = sumInputIds('rep-pat-resp', 6, true);
+
+        const rep_scores = { 1: 0, 2: 0 };
+        rep_scores[repStarter] += startRep;
+        rep_scores[repResponder] += respRep;
+
+        rep_mc1 = rep_scores[1] + sumExtrasByPrefix('rep-extra-mc1');
+        rep_mc2 = rep_scores[2] + sumExtrasByPrefix('rep-extra-mc2');
+
+        setText('rep-total-mc1', rep_mc1.toFixed(1));
+        setText('rep-total-mc2', rep_mc2.toFixed(1));
+        setText('table-rep-mc1', rep_mc1.toFixed(1));
+        setText('table-rep-mc2', rep_mc2.toFixed(1));
+        setText('table-rep-diff', Math.abs(rep_mc1 - rep_mc2).toFixed(1));
+      }
+
+      // Decisión final
+      const name1 = getMcName(1);
+      const name2 = getMcName(2);
+      const headlineEl = document.getElementById('verdictHeadline');
+      const detailsEl = document.getElementById('verdictDetails');
+      const quickVerdictEl = document.getElementById('quickVerdict');
+
+      if (state.replicaEnabled && (rep_mc1 > 0 || rep_mc2 > 0)) {
+        const repDiff = Math.abs(rep_mc1 - rep_mc2);
+        if (repDiff > 0.5) {
+          const winner = rep_mc1 > rep_mc2 ? name1 : name2;
+          const color = rep_mc1 > rep_mc2 ? 'text-rose-400' : 'text-cyan-400';
+          headlineEl.innerHTML = `GANA TRAS RÉPLICA: <span class="${color}">${winner}</span>`;
+          detailsEl.innerText = `Desempate: ${name1} (${rep_mc1.toFixed(1)}) vs ${name2} (${rep_mc2.toFixed(1)}) - Dif: ${repDiff.toFixed(1)} pts.`;
+          quickVerdictEl.innerText = `GANA ${winner}`;
+          quickVerdictEl.className = 'px-1.5 py-0.2 rounded text-[9px] font-brand uppercase bg-emerald-950 text-emerald-400 border border-emerald-800/40';
+        } else {
+          headlineEl.innerHTML = `<span class="text-amber-400">EMPATE EN RÉPLICA</span>`;
+          detailsEl.innerText = `Diferencia de solo ${repDiff.toFixed(1)} pts en réplica. Requiere nueva réplica según criterio.`;
+          quickVerdictEl.innerText = 'EMPATE RÉPLICA';
+          quickVerdictEl.className = 'px-1.5 py-0.2 rounded text-[9px] font-brand uppercase bg-amber-950 text-amber-400 border border-amber-800/40';
+        }
+      } else if (diff > 5.0) {
+        const winner = grandMC1 > grandMC2 ? name1 : name2;
+        const color = grandMC1 > grandMC2 ? 'text-rose-400' : 'text-cyan-400';
+        headlineEl.innerHTML = `VICTORIA DIRECTA: <span class="${color}">${winner}</span>`;
+        detailsEl.innerText = `Diferencia de ${diff.toFixed(1)} puntos (> 5.0). Victoria directa sin réplica.`;
+        quickVerdictEl.innerText = `GANA ${winner}`;
+        quickVerdictEl.className = 'px-1.5 py-0.2 rounded text-[9px] font-brand uppercase bg-emerald-950 text-emerald-400 border border-emerald-800/40';
+      } else {
+        headlineEl.innerHTML = `<span class="text-amber-400">RÉPLICA</span>`;
+        detailsEl.innerText = `Diferencia de ${diff.toFixed(1)} puntos (≤ 5.0). Empate reglamentario.`;
+        quickVerdictEl.innerText = 'RÉPLICA';
+        quickVerdictEl.className = 'px-1.5 py-0.2 rounded text-[9px] font-brand uppercase bg-amber-950 text-amber-400 border border-amber-800/40';
+      }
+    }
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+
+    function toggleBlindMode() {
+      state.blindMode = !state.blindMode;
+      const body = document.body;
+      const btn = document.getElementById('toggleBlindBtn');
+      const label = document.getElementById('blindBtnLabel');
+
+      if (state.blindMode) {
+        body.classList.add('hidden-scores');
+        btn.classList.add('border-amber-500', 'text-amber-300');
+        label.innerText = 'Mostrar Sumas';
+      } else {
+        body.classList.remove('hidden-scores');
+        btn.classList.remove('border-amber-500', 'text-amber-300');
+        label.innerText = 'Ocultar Sumas';
+      }
+    }
+
+    function updateNames() {
+      const name1 = getMcName(1);
+      const name2 = getMcName(2);
+
+      document.querySelectorAll('.mc1LabelDisplay').forEach(el => el.innerText = name1);
+      document.querySelectorAll('.mc2LabelDisplay').forEach(el => el.innerText = name2);
+      document.querySelectorAll('.mc1ShortName').forEach(el => el.innerText = name1.substring(0, 8));
+      document.querySelectorAll('.mc2ShortName').forEach(el => el.innerText = name2.substring(0, 8));
+
+      const r1Starter = state.battleStarter;
+      const r2Starter = r1Starter === 1 ? 2 : 1;
+      const r3Starter = r2Starter;
+
+      setText('r1-turn-badge', `Inicia ${getMcName(r1Starter)}`);
+      setText('r2-turn-badge', `Inicia ${getMcName(r2Starter)} (Cerró R1)`);
+      setText('r3-turn-badge', `Inicia ${getMcName(r3Starter)} (Cerró R2)`);
+
+      recalculateTotals();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-black', 'shadow');
+        btn.classList.add('bg-zinc-900', 'text-zinc-400');
+      });
+
+      const activePane = document.getElementById(`pane-${tabId}`);
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activePane) activePane.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-zinc-900', 'text-zinc-400');
+        activeBtn.classList.add('bg-amber-500', 'text-black', 'shadow');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openHelpModal() { document.getElementById('helpModal').classList.remove('hidden'); }
+    function closeHelpModal() { document.getElementById('helpModal').classList.add('hidden'); }
+
+    function openExportModal() {
+      const name1 = getMcName(1);
+      const name2 = getMcName(2);
+      const total1 = document.getElementById('globalScoreMC1').innerText;
+      const total2 = document.getElementById('globalScoreMC2').innerText;
+      const r1_1 = document.getElementById('table-r1-mc1').innerText;
+      const r1_2 = document.getElementById('table-r1-mc2').innerText;
+      const r2_1 = document.getElementById('table-r2-mc1').innerText;
+      const r2_2 = document.getElementById('table-r2-mc2').innerText;
+      const r3_1 = document.getElementById('table-r3-mc1').innerText;
+      const r3_2 = document.getElementById('table-r3-mc2').innerText;
+      const diff = document.getElementById('quickDiff').innerText;
+      
+      let summary = 
+`=========================================
+      PLANILLA DE JUEZ - FMS
+=========================================
+BATALLA: ${name1} vs ${name2}
+-----------------------------------------
+RONDAS               | ${name1.padEnd(8)} | ${name2.padEnd(8)}
+1. Random Mode       | ${r1_1.padEnd(8)} | ${r1_2.padEnd(8)}
+2. Minutos Libres    | ${r2_1.padEnd(8)} | ${r2_2.padEnd(8)}
+3. Deluxe (4x4)      | ${r3_1.padEnd(8)} | ${r3_2.padEnd(8)}
+-----------------------------------------
+TOTAL REGULAR        | ${total1.padEnd(8)} | ${total2.padEnd(8)}
+DIFERENCIA           | ${diff} pts`;
+
+      if (state.replicaEnabled) {
+        const rep1 = document.getElementById('table-rep-mc1').innerText;
+        const rep2 = document.getElementById('table-rep-mc2').innerText;
+        summary += `\n-----------------------------------------
+⚡ RÉPLICA 4X4       | ${rep1.padEnd(8)} | ${rep2.padEnd(8)}`;
+      }
+
+      summary += `\n=========================================`;
+
+      document.getElementById('exportText').value = summary;
+      document.getElementById('exportModal').classList.remove('hidden');
+    }
+
+    function closeExportModal() { document.getElementById('exportModal').classList.add('hidden'); }
+
+    function copyExportText() {
+      const copyTextarea = document.getElementById('exportText');
+      copyTextarea.select();
+      try {
+        document.execCommand('copy');
+        const feedback = document.getElementById('copyFeedback');
+        feedback.classList.remove('opacity-0');
+        setTimeout(() => feedback.classList.add('opacity-0'), 2000);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function confirmReset() {
+      state.savedScores = {};
+      state.savedReplies = {};
+      document.querySelectorAll('input.score-input').forEach(i => i.value = '0');
+      document.querySelectorAll('input[type=hidden]').forEach(h => {
+        h.value = '0';
+        const btn = document.getElementById(`btn-${h.id}`);
+        if (btn) {
+          btn.classList.remove('bg-emerald-500', 'text-black', 'font-black');
+          btn.classList.add('bg-zinc-800', 'text-zinc-500');
+        }
+      });
+      recalculateTotals();
+      switchTab('r1');
+    }
+
+    // Atajo de teclado '?' para abrir ayuda
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        openHelpModal();
+      }
+      if (e.key === 'Escape') {
+        closeHelpModal();
+        closeExportModal();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderScoreboard();
+      updateNames();
+    });
+  </script>
+</body>
+</html>
